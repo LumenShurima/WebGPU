@@ -1,5 +1,6 @@
 // main.js
 
+import EMath from "./EMath.js";
 import { LogMgr } from "./LogSystem.js";
 import Mesh from "./Mesh.js";
 
@@ -9,20 +10,37 @@ const log = new LogMgr();
 const canvas = document.getElementById('gfx');
 const context = canvas.getContext('webgpu');
 
+const adapter   = await navigator.gpu.requestAdapter();
+if(!adapter) {
+    log.error("Failed to get GPU adapter.")
+}
+const device    = await adapter.requestDevice();
+if(!device) {
+    log.error("Failed to get GPU device.")
+}
+
+const modelMat = new Float32Array(16);
+const viewProjMat = new Float32Array(16);
+
+
+
+
+
+let depthTexture = device.createTexture({
+    size: [canvas.width, canvas.height],
+    format: 'depth24plus',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT
+});
+
+
 if(!navigator.gpu) {
     // alert("This browser does not support webgpu")
     log.error("This browser does not support webgpu");
 }
 
-const adapter   = await navigator.gpu.requestAdapter();
-if(!adapter) {
-    log.error("Failed to get GPU adapter.")
-}
 
-const device    = await adapter.requestDevice();
-if(!device) {
-    log.error("Failed to get GPU device.")
-}
+
+
 
 const format = navigator.gpu.getPreferredCanvasFormat();
 if(!format) {
@@ -43,12 +61,14 @@ function resizeCanvas() {
         format,
         alphaMode: 'opaque'
     })
+
+    updateViewProj();
+    updateDepthTexture();
 }
 
 // 초기에 한번 실행 시키도록
 resizeCanvas();
-// resize 던지면 resizeCavnas 실행하도록 Binding
-window.addEventListener('resize', resizeCanvas);
+
 
 log.log("WebGPU Init Done.")
 
@@ -121,11 +141,7 @@ if (info.messages.some(m => m.type === "error")) {
 // -------------------------------------------------------------------------
 
 
-let depthTexture = device.createTexture({
-    size: [canvas.width, canvas.height],
-    format: 'depth24plus',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT
-});
+
 
 function updateDepthTexture() {
     depthTexture = device.createTexture({
@@ -146,36 +162,110 @@ const pipelineLayout = device.createPipelineLayout({
 
 // Render Pipeline
 const pipeline = device.createRenderPipeline({
-    layout: pipelineLayout,
-    vertex: {
-        module: shaderModule,
-        entryPoint: 'vs_main',
-        buffers: [
-            {
-                arrayStride: 4 * 6,     // float 6개 (pos3 + color3)
-                attributes: [
-                    {
-                        shaderLocation: 0,
-                        offset: 0,
-                        format: 'float32x3',
-                    },
-                    {
-                        shaderLocation: 1,
-                        offset: 4 * 3,
-                        format: 'float32x3',
-                    },
-                ],
-            },
+  layout: pipelineLayout,
+
+  vertex: {
+    module: shaderModule,
+    entryPoint: 'vs_main',
+    buffers: [
+      {
+        arrayStride: 4 * 6,
+        attributes: [
+          { shaderLocation: 0, offset: 0, format: 'float32x3' },
+          { shaderLocation: 1, offset: 4 * 3, format: 'float32x3' },
         ],
-    },
-    fragment: {
-        module: shaderModule,
-        entryPoint: 'fs_main',
-        targets: [{ format }],
-    },
-    primitive: {
-        format: 'depth24plus',
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-    },
+      },
+    ],
+  },
+
+  fragment: {
+    module: shaderModule,
+    entryPoint: 'fs_main',
+    targets: [{ format }],
+  },
+
+  primitive: {
+    topology: 'triangle-list',
+    cullMode: 'none',
+  },
+
+  // ⭐ 이 블록이 없어서 에러 발생
+  depthStencil: {
+    format: 'depth24plus',
+    depthWriteEnabled: true,
+    depthCompare: 'less',
+  },
 });
+
+
+
+// 카메라: z = -5 에서 원점 바라보는 간단 버전
+function updateViewProj() {
+    const aspect = canvas.width / canvas.height;
+    const proj = new Float32Array(16);
+    EMath.Matrix4x4_Perspective(proj, EMath.DegreeToRadians(45), aspect, 0.1, 100);
+
+    const view = new Float32Array(16);
+    EMath.Matrix4x4_Translate(view, 0, 0, -5);
+
+    EMath.Matrix4x4_Multiply(viewProjMat, proj, view);
+}
+updateViewProj();
+
+let lastTime = 0;
+function frame(time) {
+    const dt = (time - lastTime) * 0.001;
+    lastTime = time;
+
+    const angle = time * 0.05; // Second per Rotation
+
+    const trans = new Float32Array(16);
+
+
+    const rot = new Float32Array(16);
+
+    EMath.Matrix4x4_Rotate(rot, angle, angle * 0.6, angle*0.3)
+    EMath.Matrix4x4_Translate(trans, 0,0,-5);
+    EMath.Matrix4x4_Multiply(modelMat, trans, rot);
+
+    // unfirom buffer upadt: model + viewProj
+    const data = new Float32Array(32); // mat4(16) * 2
+    data.set(modelMat, 0);
+    data.set(viewProjMat, 16);
+    device.queue.writeBuffer(uniformBuffer, 0, data.buffer);
+
+    // render pass
+    const commandEncoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
+
+    const depthView = depthTexture.createView();
+
+    const renderPass = commandEncoder.beginRenderPass({
+        colorAttachments: [
+        {
+            view: textureView,
+            clearValue: { r:0.1, g:0.1, b:0.15, a:1 },
+            loadOp: 'clear',
+            storeOp: 'store',
+        }
+        ],
+        depthStencilAttachment: {
+        view: depthView,
+        depthClearValue: 1.0,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+        }
+    });
+
+    renderPass.setPipeline(pipeline);
+    renderPass.setBindGroup(0, uniformBindGroup);
+    renderPass.setVertexBuffer(0, vertexBuffer);
+    renderPass.setIndexBuffer(indexBuffer, 'uint16');
+    renderPass.drawIndexed(Mesh.cube.Indices.length);
+    renderPass.end();
+
+    device.queue.submit([commandEncoder.finish()]);
+    requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
