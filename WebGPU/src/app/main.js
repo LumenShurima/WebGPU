@@ -2,13 +2,14 @@
 
 import EMath from "../EMath.js";
 import logSystem_1 from "../LogSystem.js";
-import Mesh from "../Mesh.js";
+import { Mesh, Shape} from "../Mesh.js";
 import createEngine from "../gfx/Engine.js";
-
-
+import Actor from "./Actor.js"
+import { device, format, context } from "../Global.js";
+import CameraActor from "./Camera.js";
 
 const canvas = document.getElementById('gfx');
-const eng = await createEngine(canvas, logSystem_1);
+//const eng = await createEngine(canvas, logSystem_1);
 
 
 
@@ -17,20 +18,8 @@ const eng = await createEngine(canvas, logSystem_1);
         // alert("This browser does not support webgpu")
         logSystem_1.error("This browser does not support webgpu");
     }
-
-    // GPU Context 핸들 받아오기
-    const adapter = await navigator.gpu.requestAdapter();
-    if(!adapter) {
-        logSystem_1.error("Failed to get GPU adapter.")
-    }
-    const device = await adapter.requestDevice();
-    if(!device) {
-        logSystem_1.error("Failed to get GPU device.")
-    }
-    const format = navigator.gpu.getPreferredCanvasFormat();
-    if(!format) {
-        logSystem_1.error("Failed to get GPU format.")
-    }
+    
+    
     
     // 깊이 텍스처
     let depthTexture = device.createTexture({
@@ -39,14 +28,15 @@ const eng = await createEngine(canvas, logSystem_1);
         usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
 
+    
 
 
 
 
-const modelMat = new Float32Array(16);
-const viewProjMat = new Float32Array(16);
 
-function resizeCanvas() {
+const CameraActor_1 = new CameraActor;
+
+function resizeCanvas(CameraActor) {
     // 일부 오래된 브라우저에 window.devicePixelRatio가 없을 경우 1로 fallback
     const devicePixelRatio = window.devicePixelRatio || 1;
     const width = canvas.clientWidth    * devicePixelRatio;
@@ -55,35 +45,21 @@ function resizeCanvas() {
     canvas.width    = width;
     canvas.height   = height;
 
-    eng.context.configure({
-        device,
-        format,
-        alphaMode: 'opaque'
-    })
-
-    updateViewProj();
+    CameraActor_1.updateViewProj();
     updateDepthTexture();
 }
 
 // 초기에 한번 실행 시키도록
-resizeCanvas();
+resizeCanvas(CameraActor_1);
+logSystem_1.log("Canvas adjustment complete.");
+
+logSystem_1.log("WebGPU Initialization complete.");
 
 
-logSystem_1.log("WebGPU Init Done.")
 
+const CubeMesh = new Mesh(Shape.cube);
+const SphereMesh = new Mesh(Shape.sphere);
 
-// Create GPU Buffer
-const vertexBuffer = device.createBuffer({
-    size: Mesh.cube.Vertices.byteLength,
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-});
-device.queue.writeBuffer(vertexBuffer, 0, Mesh.cube.Vertices);
-
-const indexBuffer = device.createBuffer({
-    size: Mesh.cube.Indices.byteLength,
-    usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-});
-device.queue.writeBuffer(indexBuffer, 0, Mesh.cube.Indices);
 
 // 카메라/ 월드 행렬용 Uniform 버퍼
 const uniformBufferSize = (4 * 4 * 4) * 2 // mat4x4 두 개 * 4byte(아마도 float)
@@ -103,15 +79,6 @@ const uniformBindGroupLayout = device.createBindGroupLayout({
     ]
 });
 
-const uniformBindGroup = device.createBindGroup({
-    layout: uniformBindGroupLayout,
-    entries: [
-        {
-            binding: 0,
-            resource: { buffer: uniformBuffer }
-        }
-    ]
-});
 
 
 // Load Shader
@@ -188,7 +155,6 @@ const pipeline = device.createRenderPipeline({
     cullMode: 'none',
   },
 
-  // ⭐ 이 블록이 없어서 에러 발생
   depthStencil: {
     format: 'depth24plus',
     depthWriteEnabled: true,
@@ -198,44 +164,30 @@ const pipeline = device.createRenderPipeline({
 
 
 
-// 카메라: z = -5 에서 원점 바라보는 간단 버전
-function updateViewProj() {
-    const aspect = canvas.width / canvas.height;
-    const proj = new Float32Array(16);
-    EMath.Matrix4x4_Perspective(proj, EMath.DegreeToRadians(45), aspect, 0.1, 100);
 
-    const view = new Float32Array(16);
-    EMath.Matrix4x4_Translate(view, 0, 0, -5);
 
-    EMath.Matrix4x4_Multiply(viewProjMat, proj, view);
-}
-updateViewProj();
 
+
+CameraActor_1.updateViewProj();
+
+
+const actor_1 = new Actor();
+const actor_2 = new Actor();
+const actor_3 = new Actor();
+
+actor_1.setMesh(CubeMesh);
+actor_2.setMesh(SphereMesh);
+actor_2.setPosition(5,0,0);
+actor_3.setMesh(SphereMesh);
+actor_3.setPosition(-5,0,0);
 let lastTime = 0;
 function frame(time) {
     const dt = (time - lastTime) * 0.001;
     lastTime = time;
 
-    const angle = time * 0.05; // Second per Rotation
-
-    const trans = new Float32Array(16);
-
-
-    const rot = new Float32Array(16);
-
-    EMath.Matrix4x4_Rotate(rot, angle, angle * 0.6, angle*0.3)
-    EMath.Matrix4x4_Translate(trans, 0,0,-5);
-    EMath.Matrix4x4_Multiply(modelMat, trans, rot);
-
-    // unfirom buffer upadt: model + viewProj
-    const data = new Float32Array(32); // mat4(16) * 2
-    data.set(modelMat, 0);
-    data.set(viewProjMat, 16);
-    device.queue.writeBuffer(uniformBuffer, 0, data.buffer);
-
     // render pass
     const commandEncoder = device.createCommandEncoder();
-    const textureView = eng.context.getCurrentTexture().createView();
+    const textureView = context.getCurrentTexture().createView();
 
     const depthView = depthTexture.createView();
 
@@ -257,10 +209,32 @@ function frame(time) {
     });
 
     renderPass.setPipeline(pipeline);
-    renderPass.setBindGroup(0, uniformBindGroup);
-    renderPass.setVertexBuffer(0, vertexBuffer);
-    renderPass.setIndexBuffer(indexBuffer, 'uint16');
-    renderPass.drawIndexed(Mesh.cube.Indices.length);
+
+
+    const angle = time * 0.05; // Second per Rotation
+
+
+    CameraActor_1.setPosition(0,0,15);
+    CameraActor_1.setRotation(0,0,0);
+    CameraActor_1.updateViewProj();
+
+
+    actor_1.setRotation(angle, angle * 0.6, angle*0.3);
+    actor_2.setRotation(angle, angle * 0.6, angle*0.3);
+    actor_3.setRotation(angle, angle * 0.6, angle*0.3);
+    
+    
+    actor_1.update();
+    actor_2.update();
+    actor_3.update();
+
+
+    actor_1.render(renderPass);
+    actor_2.render(renderPass);
+    actor_3.render(renderPass);
+
+    
+
     renderPass.end();
 
     device.queue.submit([commandEncoder.finish()]);
@@ -268,3 +242,4 @@ function frame(time) {
 }
 
 requestAnimationFrame(frame);
+
