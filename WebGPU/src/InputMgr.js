@@ -3,9 +3,21 @@
 
 
 export class InputMgr {
+    
     constructor() {
+        
+    }
+
+    static Init() {
+        console.log("InputMgr Init.");
         window.addEventListener("keydown", (e) => {
-            this.key_W();
+            if(e.key === "w" || e.key === "W") {
+                InputMgr.key_W();
+            }
+            if(e.key === "s" || e.key === "S") {
+                InputMgr.key_S();
+            }
+            
         });
         
         window.addEventListener("keyup", (e) => {
@@ -13,7 +25,7 @@ export class InputMgr {
         });
     }
 
-    static key_W() {
+    static Key_W() {
 
     }
 }

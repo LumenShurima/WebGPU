@@ -166,6 +166,7 @@ const pipeline = device.createRenderPipeline({
 });
 
 
+InputMgr.Init();
 
 const CubeMesh = new Mesh(Shape.cube);
 const CubeMesh_Red = new Mesh(Shape.cube);
@@ -178,7 +179,6 @@ CameraActor_1.update();
 
 
 
-
 const actor_1 = new Actor();
 const actor_2 = new Actor();
 const actor_3 = new Actor();
@@ -187,11 +187,12 @@ LevelMgr.addActor(actor_1);
 LevelMgr.addActor(actor_2);
 LevelMgr.addActor(actor_3);
 
-actor_1.setMesh(CubeMesh_Red);
-actor_2.setMesh(CubeMesh_Red);
+actor_1.setMesh(CubeMesh);
+actor_2.setMesh(CubeMesh);
 actor_2.setPosition(5,0,0);
-actor_3.setMesh(CubeMesh_Red);
+actor_3.setMesh(CubeMesh);
 actor_3.setPosition(-5,0,0);
+
 
 
 let lastTime = 0;
@@ -228,11 +229,17 @@ function frame(time) {
     const angle = time * 0.05; // Second per Rotation
 
 
-    CameraActor_1.setPosition(0,0,15);
+    
     CameraActor_1.setRotation(0,0,0);
-    CameraActor_1.update();
+    
 
-    // InputMgr.key_W()= () => CameraActor_1.addPosition(0,0,15);
+    InputMgr.key_W = () => {
+        CameraActor_1.addPosition(0, 0, -0.001*time);
+    };
+    InputMgr.key_S = () => {
+        CameraActor_1.addPosition(0, 0, 0.001*time);
+    };
+    CameraActor_1.update();
 
     actor_1.setRotation(angle, angle * 0.6, angle*0.3);
     actor_2.setRotation(angle, angle * 0.6, angle*0.3);

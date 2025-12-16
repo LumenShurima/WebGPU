@@ -14,7 +14,7 @@ export default class CameraActor extends Actor {
         super.setPosition(x,y,z); 
     }
     setRotation(x,y,z) { 
-        super.setRotation(x,y,z); 
+        super.setRotation(x,y,z);
     }
     addPosition(x,y,z) {
         super.addPosition(x,y,z);
