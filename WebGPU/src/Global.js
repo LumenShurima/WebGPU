@@ -58,4 +58,4 @@ context.configure({
 export const viewProjMat = new Float32Array(16);
 
 
-const Actors = [];
+

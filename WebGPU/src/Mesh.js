@@ -125,6 +125,7 @@ export const Shape = {
 
 export class Mesh {
     constructor(_shape) {
+        this.originShape = _shape;
         this.vertexBuffer = device.createBuffer({
         size: _shape.Vertices.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -139,5 +140,21 @@ export class Mesh {
 
         this.indexCount  = _shape.Indices.length;
         this.indexFormat = (_shape.Indices instanceof Uint32Array) ? "uint32" : "uint16";
+    }
+
+    changeColor(r, g, b) {
+        const v = this.originShape.Vertices;   // Float32Array
+        const stride = 6;                      // x y z r g b
+        const count = v.length / stride;
+
+        for (let idx = 0; idx < count; idx++) {
+            const base = idx * stride;
+            v[base + 3] = r;
+            v[base + 4] = g;
+            v[base + 5] = b;
+        }
+
+        // GPU 버텍스 버퍼에 다시 업로드 (전체 갱신)
+        device.queue.writeBuffer(this.vertexBuffer, 0, v);
     }
 }

@@ -7,6 +7,8 @@ import createEngine from "../gfx/Engine.js";
 import Actor from "./Actor.js"
 import { device, format, context } from "../Global.js";
 import CameraActor from "./Camera.js";
+import { LevelMgr } from "./LevelMgr.js";
+import { InputMgr } from "../InputMgr.js";
 
 const canvas = document.getElementById('gfx');
 //const eng = await createEngine(canvas, logSystem_1);
@@ -45,7 +47,7 @@ function resizeCanvas(CameraActor) {
     canvas.width    = width;
     canvas.height   = height;
 
-    CameraActor_1.updateViewProj();
+    CameraActor_1.update();
     updateDepthTexture();
 }
 
@@ -57,8 +59,7 @@ logSystem_1.log("WebGPU Initialization complete.");
 
 
 
-const CubeMesh = new Mesh(Shape.cube);
-const SphereMesh = new Mesh(Shape.sphere);
+
 
 
 // 카메라/ 월드 행렬용 Uniform 버퍼
@@ -122,6 +123,8 @@ window.addEventListener('resize', () => {
     updateDepthTexture();
 });
 
+
+
 const pipelineLayout = device.createPipelineLayout({
     bindGroupLayouts: [uniformBindGroupLayout],
 });
@@ -164,22 +167,33 @@ const pipeline = device.createRenderPipeline({
 
 
 
+const CubeMesh = new Mesh(Shape.cube);
+const CubeMesh_Red = new Mesh(Shape.cube);
+const SphereMesh = new Mesh(Shape.sphere);
+
+CubeMesh_Red.changeColor(1,0,0);
 
 
+CameraActor_1.update();
 
 
-CameraActor_1.updateViewProj();
 
 
 const actor_1 = new Actor();
 const actor_2 = new Actor();
 const actor_3 = new Actor();
 
-actor_1.setMesh(CubeMesh);
-actor_2.setMesh(SphereMesh);
+LevelMgr.addActor(actor_1);
+LevelMgr.addActor(actor_2);
+LevelMgr.addActor(actor_3);
+
+actor_1.setMesh(CubeMesh_Red);
+actor_2.setMesh(CubeMesh_Red);
 actor_2.setPosition(5,0,0);
-actor_3.setMesh(SphereMesh);
+actor_3.setMesh(CubeMesh_Red);
 actor_3.setPosition(-5,0,0);
+
+
 let lastTime = 0;
 function frame(time) {
     const dt = (time - lastTime) * 0.001;
@@ -216,22 +230,24 @@ function frame(time) {
 
     CameraActor_1.setPosition(0,0,15);
     CameraActor_1.setRotation(0,0,0);
-    CameraActor_1.updateViewProj();
+    CameraActor_1.update();
 
+    // InputMgr.key_W()= () => CameraActor_1.addPosition(0,0,15);
 
     actor_1.setRotation(angle, angle * 0.6, angle*0.3);
     actor_2.setRotation(angle, angle * 0.6, angle*0.3);
     actor_3.setRotation(angle, angle * 0.6, angle*0.3);
+    const speed = 0.001;                 // 1.0이면 1초당 1주기(대략)
+    const t = time * speed;
+    const red = 0.5 + 0.5 * Math.sin(t);   // 0..1
+
+    CubeMesh_Red.changeColor(red, 0, 0);
     
-    
-    actor_1.update();
-    actor_2.update();
-    actor_3.update();
+    LevelMgr.update();
 
 
-    actor_1.render(renderPass);
-    actor_2.render(renderPass);
-    actor_3.render(renderPass);
+    LevelMgr.render(renderPass);
+    
 
     
 
