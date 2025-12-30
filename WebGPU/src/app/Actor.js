@@ -39,6 +39,22 @@ export default class Actor {
         this.Rotation[2] = z;
     }
 
+    getPosition() {
+        return {
+            x: this.Position[0],
+            y: this.Position[1],
+            z: this.Position[2],
+        }
+    }
+
+    getRotation() {
+        return {
+            x: this.Rotation[0],
+            y: this.Rotation[1],
+            z: this.Rotation[2],
+        }
+    }
+
     addPosition(x,y,z) { 
         this.Position[0] += x;
         this.Position[1] += y;

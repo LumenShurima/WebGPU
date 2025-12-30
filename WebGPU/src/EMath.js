@@ -9,6 +9,66 @@ class EMath {
     static DegreeToRadians(degree) { return degree * Math.PI / 180; }
 
 
+    static Normalized3(v) {
+        const len = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+        if (!Number.isFinite(len) || len === 0) return { x:0, y:0, z:0 };
+        return { x: v.x/len, y: v.y/len, z: v.z/len };
+    }
+
+    static sum3(a, b) {
+        return { 
+            x: a.x + b.x, 
+            y: a.y + b.y, 
+            z: a.z + b.z, 
+        };
+    }
+
+    static sub3(a, b) {
+        return { 
+            x: a.x - b.x, 
+            y: a.y - b.y, 
+            z: a.z - b.z, 
+        };
+    }
+
+    static mul3(a, b) {
+    // 벡터 × 스칼라
+    if (typeof b === "number") {
+        return {
+        x: a.x * b,
+        y: a.y * b,
+        z: a.z * b,
+        };
+    }
+
+    // 벡터 × 벡터
+    return {
+        x: a.x * b.x,
+        y: a.y * b.y,
+        z: a.z * b.z,
+    };
+    }
+
+    static length3(v) {
+        return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    }
+
+    static div3(a, b) {
+    // 벡터 / 스칼라
+    if (typeof b === "number") {
+        if (b === 0) return { x: 0, y: 0, z: 0 }; // 또는 throw
+        return { x: a.x / b, y: a.y / b, z: a.z / b };
+    }
+
+    // 벡터 / 벡터 (성분별 나눗셈)
+    return {
+        x: (b.x === 0) ? 0 : (a.x / b.x),
+        y: (b.y === 0) ? 0 : (a.y / b.y),
+        z: (b.z === 0) ? 0 : (a.z / b.z),
+    };
+    }
+
+
     // 카메라 행렬 연산
     static Matrix4x4_Perspective(out, fovy, aspect, near, far) {
         const f = 1.0 / Math.tan(fovy / 2);

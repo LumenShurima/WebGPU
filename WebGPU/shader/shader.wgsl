@@ -8,19 +8,19 @@ struct Uniforms {
 @group(0) @binding(0)
 var<uniform> uniforms : Uniforms;
 
-struct VertexIn {
+struct VSIn {
     @location(0) position   : vec3<f32>,
-    @location(1) color      : vec3<f32>,
+    @location(1) color      : vec4<f32>,
 };
 
-struct VertexOut {
+struct VSOut {
     @builtin(position) position : vec4<f32>,
-    @location(0) color          : vec3<f32>,
+    @location(0) color          : vec4<f32>,
 };
 
 @vertex
-fn vs_main(input : VertexIn) -> VertexOut {
-    var out : VertexOut;
+fn vs_main(input : VSIn) -> VSOut {
+    var out : VSOut;
     let pos = uniforms.viewProjMatrix * uniforms.modelMatrix * vec4<f32>(input.position, 1.0);
     out.position = pos;
     out.color = input.color;
@@ -28,6 +28,6 @@ fn vs_main(input : VertexIn) -> VertexOut {
 }
 
 @fragment
-fn fs_main(input : VertexOut) -> @location(0) vec4<f32> {
-    return vec4<f32>(input.color, 1.0);
+fn fs_main(input : VSOut) -> @location(0) vec4<f32> {
+    return vec4<f32>(input.color);
 }

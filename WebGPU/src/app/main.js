@@ -138,20 +138,35 @@ const pipeline = device.createRenderPipeline({
     entryPoint: 'vs_main',
     buffers: [
       {
-        arrayStride: 4 * 6,
+        arrayStride: 7 * 4,
         attributes: [
           { shaderLocation: 0, offset: 0, format: 'float32x3' },
-          { shaderLocation: 1, offset: 4 * 3, format: 'float32x3' },
+          { shaderLocation: 1, offset: 3 * 4, format: 'float32x4' },
         ],
       },
     ],
   },
 
   fragment: {
-    module: shaderModule,
-    entryPoint: 'fs_main',
-    targets: [{ format }],
-  },
+  module: shaderModule,
+  entryPoint: 'fs_main',
+  targets: [{
+    format,
+    blend: {
+      color: {
+        srcFactor: 'src-alpha',
+        dstFactor: 'one-minus-src-alpha',
+        operation: 'add',
+      },
+      alpha: {
+        srcFactor: 'one',
+        dstFactor: 'one-minus-src-alpha',
+        operation: 'add',
+      },
+    },
+    writeMask: GPUColorWrite.ALL,
+  }],
+},
 
   primitive: {
     topology: 'triangle-list',
@@ -160,13 +175,13 @@ const pipeline = device.createRenderPipeline({
 
   depthStencil: {
     format: 'depth24plus',
-    depthWriteEnabled: true,
+    depthWriteEnabled: false,
     depthCompare: 'less',
   },
 });
 
 
-InputMgr.Init();
+InputMgr.Init(canvas);
 
 const CubeMesh = new Mesh(Shape.cube);
 const CubeMesh_Red = new Mesh(Shape.cube);
@@ -176,7 +191,7 @@ CubeMesh_Red.changeColor(1,0,0);
 
 
 CameraActor_1.update();
-
+CameraActor_1.setPosition(0,0,10);
 
 
 const actor_1 = new Actor();
@@ -193,13 +208,14 @@ actor_2.setPosition(5,0,0);
 actor_3.setMesh(CubeMesh);
 actor_3.setPosition(-5,0,0);
 
+let targetLocation = {x: 0, y:0, z:0};
 
 
 let lastTime = 0;
 function frame(time) {
     const dt = (time - lastTime) * 0.001;
     lastTime = time;
-
+    InputMgr.tick();
     // render pass
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
@@ -231,16 +247,39 @@ function frame(time) {
 
     
     CameraActor_1.setRotation(0,0,0);
-    
 
+
+    
     InputMgr.key_W = () => {
-        CameraActor_1.addPosition(0, 0, -0.001*time);
+        CameraActor_1.addPosition(0, 0, -10*dt);
     };
     InputMgr.key_S = () => {
-        CameraActor_1.addPosition(0, 0, 0.001*time);
+        CameraActor_1.addPosition(0, 0, 10*dt);
+        console.log(100*dt);
     };
-    CameraActor_1.update();
 
+    
+    InputMgr.Mouse_Down_Left = () => {
+        const pos2D = InputMgr.getCanvasPos();
+        targetLocation = { 
+            x: pos2D.x, 
+            y: pos2D.y, 
+            z:0 
+        };
+        
+    };
+    {
+        const sub3D = EMath.sub3(actor_1.getPosition(), targetLocation);
+        // console.log(`Actor : ${actor_1.getPosition().x}, Target : ${targetLocation.x}`);
+        if(sub3D.x === 0 && sub3D.y === 0, sub3D.z === 0) {
+            const Direction3D = sub3D;
+            const NormalizedDirection3D = EMath.Normalized3(Direction3D);
+            const step = EMath.mul3(NormalizedDirection3D, dt * 3);
+            // actor_1.addPosition(step.x, step.y, step.z);
+        }
+    };
+    
+    CameraActor_1.update();
     actor_1.setRotation(angle, angle * 0.6, angle*0.3);
     actor_2.setRotation(angle, angle * 0.6, angle*0.3);
     actor_3.setRotation(angle, angle * 0.6, angle*0.3);
