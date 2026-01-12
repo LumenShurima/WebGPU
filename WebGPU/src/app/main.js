@@ -5,7 +5,7 @@ import logSystem_1 from "../LogSystem.js";
 import { Mesh, Shape} from "../Mesh.js";
 import createEngine from "../gfx/Engine.js";
 import Actor from "./Actor.js"
-import { device, format, context } from "../Global.js";
+import { device, format, context, viewProjMat } from "../Global.js";
 import CameraActor from "./Camera.js";
 import { LevelMgr } from "./LevelMgr.js";
 import { InputMgr } from "../InputMgr.js";
@@ -58,6 +58,38 @@ logSystem_1.log("Canvas adjustment complete.");
 logSystem_1.log("WebGPU Initialization complete.");
 
 
+//#region Engine 계층 유틸
+function ndcToWorldRay(ndcX, ndcY, invViewProj) {
+    // WebGL clip z: near=-1, far=+1
+    const clipNear  = EMath.v4(ndcX,ndcY,-1,1);
+    const clipFar   = EMath.v4(ndcX,ndcY,1,1);
+
+    const wNear4 = EMath.mulMat4Vec4(invViewProj, clipNear);
+    const wFar4 = EMath.mulMat4Vec4(invViewProj, clipFar);
+
+    const worldNear = EMath.perspectiveDivide(wNear4);
+    const worldFar = EMath.perspectiveDivide(wFar4);
+
+    const origin = worldNear;
+    const dir = EMath.Normalized3(
+        EMath.sub3(worldFar, worldNear)
+    );
+
+    return {origin, dir};
+}
+
+function intersectRayPlane(rayOrigin, rayDir, planePoint, planeNormal) {
+    const denom = EMath.dot3(rayDir, planeNormal);
+    if(Math.abs(denom) < 1e-8) return null; // 평행
+
+    const t = EMath.dot3(EMath.sub3(planePoint, rayOrigin), planeNormal) / denom;
+    if(t < 0) return null; // 카메라 뒤쪽
+
+    return EMath.sum3(rayOrigin, EMath.mul3s(rayDir,t));
+}
+
+
+//#endregion
 
 
 
@@ -208,7 +240,7 @@ actor_2.setPosition(5,0,0);
 actor_3.setMesh(CubeMesh);
 actor_3.setPosition(-5,0,0);
 
-let targetLocation = {x: 0, y:0, z:0};
+let moveTarget = {x: 0, y:0, z:0};
 
 
 let lastTime = 0;
@@ -260,22 +292,46 @@ function frame(time) {
 
     
     InputMgr.Mouse_Down_Left = () => {
-        const pos2D = InputMgr.getCanvasPos();
-        targetLocation = { 
-            x: pos2D.x, 
-            y: pos2D.y, 
-            z:0 
-        };
+        const p = InputMgr.getMousePosCanvasNDC();
         
+        // 카메라에서 제공되는 역 VP 행렬
+        let invVP = new Float32Array(16);
+        EMath.Matrix4x4_Invert(invVP, viewProjMat);
+
+        const ray = ndcToWorldRay(p.ndcX, p.ndcY, invVP);
+
+        // 지면(y=0)과 교차
+        const hit = intersectRayPlane(
+            ray.origin,
+            ray.dir,
+            EMath.v3(0,0,0),  // plane point
+            EMath.v3(0,0,1)   // plane normal (y-up)
+        );
+        console.log("hit", hit);
+        if(hit) {
+            moveTarget = hit;
+            console.log("hit", hit);
+        }
     };
+    if(moveTarget)
     {
-        const sub3D = EMath.sub3(actor_1.getPosition(), targetLocation);
-        // console.log(`Actor : ${actor_1.getPosition().x}, Target : ${targetLocation.x}`);
-        if(sub3D.x === 0 && sub3D.y === 0, sub3D.z === 0) {
-            const Direction3D = sub3D;
-            const NormalizedDirection3D = EMath.Normalized3(Direction3D);
-            const step = EMath.mul3(NormalizedDirection3D, dt * 3);
-            // actor_1.addPosition(step.x, step.y, step.z);
+        const pos = actor_1.getPosition();
+        const toTarget = EMath.LookAt3(moveTarget, pos);
+        const dist = EMath.length3(toTarget);
+
+        // 도착 처리
+        const stopEps = 0.02;
+        if(dist < stopEps) {
+            moveTarget = null;    
+        }
+        else{
+            const dir = EMath.mul3s(toTarget, 1/dist);
+            const speed = 2.0;
+            const stepLen = speed * dt;
+
+            // 오버슈트 방지 : 남은 거리보다 더 움직이지 않게 clamp
+            const step = EMath.mul3s(dir, Math.min(stepLen, dist));
+            actor_1.addPosition(step.x, step.y, step.z);
         }
     };
     

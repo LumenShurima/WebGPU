@@ -59,7 +59,7 @@ export class InputMgr {
             {
                 this.dragging = true;
                 InputMgr.Mouse_Drag_Begin();
-                console.log("Dragging Begin");
+                if(debugging) console.log("Dragging Begin");
             }
             if (e.button === 0) {
                 if(debugging) console.log("Mouse Left Down");
@@ -89,12 +89,12 @@ export class InputMgr {
             // if (document.pointerLockElement !== elem) return;
 
             this.mouseX = e.clientX; this.mouseY = e.clientY;
-            console.log(this.mouseX);
-            console.log(this.mouseY);
+            // console.log(this.getMousePosCanvasNDC());
             // IsDragging
             if(this.dragging) {
                 InputMgr.Mouse_Dragging();
-                console.log("Dragging");
+                if(debugging) console.log("Dragging");
+                
             }
 
             InputMgr.Mouse_Move();
@@ -120,7 +120,7 @@ export class InputMgr {
             if(this.dragging)
             {
                 this.dragging = false;
-                console.log("Dragging End");
+                if(debugging) console.log("Dragging End");
                 InputMgr.Mouse_Drag_End();
             }
         });
@@ -131,14 +131,33 @@ export class InputMgr {
     }
 
 
-    static getCanvasPos() {
+    static getMousePosCanvasCartesian() {
         const rect = this.Canvas.getBoundingClientRect();
+        const cx = rect.width  * 0.5;
+        const cy = rect.height * 0.5;
+
         return {
-            x: this.Canvas.width / 2 - (this.mouseX - rect.left),
-            y: (this.mouseY - rect.top) - this.Canvas.height / 2,
-        }
+            x: this.mouseX - cx,
+            y: cy - this.mouseY,
+        };
     }
 
+    static getMousePosCanvasNDC(digits = 3) {
+        const p = this.getMousePosCanvasCartesian();
+        const rect = this.Canvas.getBoundingClientRect();
+        const sx = 2 / rect.width;
+        const sy = 2 / rect.height;
+
+        return {
+            ndcX: this.truncFloat(p.x * sx, digits),
+            ndcY: this.truncFloat(p.y * sy, digits),
+        };
+    }
+
+    static truncFloat(v, digits) {
+        const k = 10 ** digits;
+        return Math.trunc(v * k) / k;
+    }
 
     
 }

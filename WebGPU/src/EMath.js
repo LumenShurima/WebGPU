@@ -3,7 +3,23 @@
 
 const DEG2RAD = Math.PI / 180;
 
-class EMath {    
+class EMath { 
+//#region Vecotr2
+static v2(x=0,y=0) {return {x,y};}
+static len2(a) { return this.dot2(a,a);}
+static dot2(a,b) {return a.x*b.x + a.y*b.y;}
+static mul2(a,b) {return {x: a.x*b.x, y: a.y*b.y}; }
+static Normalized2(a){
+    const l = Math.sqrt(this.len2(a));
+    if(l < 1e-30) return v2(0,0);
+    return this.mul2(a, 1.0/l);
+}
+//#endregion
+
+//#region Vector3
+    // vec3
+    static v3(x=0,y=0,z=0){return {x,y,z};}
+    
     static clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
     static DegreeToRadians(degree) { return degree * Math.PI / 180; }
@@ -31,27 +47,40 @@ class EMath {
         };
     }
 
+
+    static mul3s(a,b) {
+        // 벡터 × 스칼라
+        if (typeof b === "number") {
+            return {
+            x: a.x * b,
+            y: a.y * b,
+            z: a.z * b,
+            };
+        }
+    }
+
     static mul3(a, b) {
-    // 벡터 × 스칼라
-    if (typeof b === "number") {
+        // 벡터 × 벡터
         return {
-        x: a.x * b,
-        y: a.y * b,
-        z: a.z * b,
+            x: a.x * b.x,
+            y: a.y * b.y,
+            z: a.z * b.z,
         };
     }
 
-    // 벡터 × 벡터
-    return {
-        x: a.x * b.x,
-        y: a.y * b.y,
-        z: a.z * b.z,
-    };
-    }
 
-    static length3(v) {
-        return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    static length3(v) {return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);}
+    static dot3(a,b){return a.x*b.x + a.y*b.y + a.z*b.z;}
+    static cross(a,b) {
+        return this.v3(
+            a.y*b.z - a.z*b.y,
+            a.z*b.x - a.x*b.z,
+            a.x*b.y - a.y*b.x
+        );
     }
+    // 현재 벡터의 부호 반전 값
+    static neg(a) {return this.v3(-a.x, -a.y, -a.z);}
+
 
     static div3(a, b) {
     // 벡터 / 스칼라
@@ -68,6 +97,37 @@ class EMath {
     };
     }
 
+    // b가 a를 바라봄.
+    static LookAt3(a, b) {
+        return {
+            x: a.x - b.x,
+            y: a.y - b.y,
+            z: a.z - b.z,
+        }
+    }
+//#endregion
+//#region Vector4
+    // vec4
+    static v4(x=0,y=0,z=0,w=1){return {x,y,z,w};}
+
+    // mat4 * vec4 (colum-major 가정: OpenGL, WebGL에서 흔함.)
+    static mulMat4Vec4(m,p) {
+        // m: length 16 array, colum-major
+        const x = p.x, y = p.y, z = p.z, w = p.w;
+        return {
+            x:m[0]*x + m[4]*y + m[8]*z  + m[12]*w,
+            y:m[1]*x + m[5]*y + m[9]*z  + m[13]*w,
+            z:m[2]*x + m[6]*y + m[10]*z + m[14]*w,
+            w:m[3]*x + m[7]*y + m[11]*z + m[15]*w,
+        }
+    }
+//#endregion
+
+    static perspectiveDivide(p) {
+        return EMath.v3(p.x/p.w, p.y/p.w, p.z/p.w);
+    }
+
+//#region Matrix4x4
 
     // 카메라 행렬 연산
     static Matrix4x4_Perspective(out, fovy, aspect, near, far) {
@@ -239,6 +299,9 @@ class EMath {
         return true;
     }
 }
+
+//#endregion
+
 
 export default EMath;
 
