@@ -71,7 +71,7 @@ static Normalized2(a){
 
     static length3(v) {return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);}
     static dot3(a,b){return a.x*b.x + a.y*b.y + a.z*b.z;}
-    static cross(a,b) {
+    static cross3(a,b) {
         return this.v3(
             a.y*b.z - a.z*b.y,
             a.z*b.x - a.x*b.z,
