@@ -455,6 +455,367 @@ class Vector3 {
         return this;
     }
 
+    /**
+     * 이 벡터의 x,y 또는 z 값이 주어진 벡터의 x,y 또는 z 값보다 작으면 해당 값을 그에 상응하는 최대값으로 대체합니다.
+     * 
+     * @param {Vector3} v
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    max( v ) {
+        this.x = Math.max(this.x, v.x);
+        this.y = Math.max(this.y, v.y);
+        this.z = Math.max(this.z, v.z);
+
+        return this;
+    }
+
+    /**
+     * 이 벡터의 x, y 또는 z 값이 최대값 벡터의 x,y 또는 z 값보다 크면 해당 값으로 대체됩니다.
+     * 이 벡터의 x,y 또는 z 값이 최소값 벡터의 x,y 또는 z 값보다 작으면 해당 값으로 대체됩니다.
+     * 
+     * @param {Vector3} min
+     * @param {Vector3} max
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    clamp( min, max ) {
+        // assumes min < max, componentwise
+
+        this.x = clamp( this.x, min.x, max.x );
+        this.x = clamp( this.y, min.y, max.y );
+        this.x = clamp( this.z, min.z, max.z );
+
+        return this;
+    }
+
+    /**
+     * 이 벡터의 x,y 또는 z가 주어진 최대값 보다 크다면 최대값으로 대체합니다.
+     * 이 벡터의 x,y 또는 z가 주어진 최소값 보다 작다면 최소값으로 대체합니다.
+     * 
+     * @param {number} minVal
+     * @param {number} maxVal
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    clampScalar( minVal, maxVal ) {
+        this.x = clamp( this.x, minVal, maxVal );
+        this.y = clamp( this.y, minVal, maxVal );
+        this.z = clamp( this.z, minVal, maxVal );
+
+        return this;
+    }
+
+    /**
+     * 이 벡터의 길이가 최대값 보다 크다면 최대값으로 대체됩니다.
+     * 이 벡터의 길이가 최소값 보다 작다면 최소값으로 대체됩니다.
+     * @param {number} min
+     * @param {number} max
+     * @return {Vector3} 이 벡터 참조를 반환
+     */
+    clampLength( min, max ) {
+        const length = this.length();
+
+        return this.divideScalar( length || 1 ).multiplyScalar( clamp(length, min, max) );
+    }
+
+    /**
+     * 이 벡터의 구성 요소는 가장 가까운 정수 값으로 내림됩니다.
+     * 
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    floor() {
+        this.x = Math.floor( this.x );
+        this.y = Math.floor( this.y );
+        this.z = Math.floor( this.z );
+        
+        return this;
+    }
+
+    /**
+     * 이 벡터의 구성 요소는 가장 가까운 정수 값으로 반올림 됩니다.
+     * 
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    ceil() {
+        this.x = Math.ceil( this.x );
+        this.y = Math.ceil( this.y );
+        this.z = Math.ceil( this.z );
+
+        return this;
+    }
+
+    /**
+     * 이 벡터의 구성 요소는 가장 가까운 정수 값으로 반올림됩니다.
+     * 
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    round() {
+        this.x = Math.round( this.x );
+        this.y = Math.round( this.y );
+        this.z = Math.round( this.z );
+
+        return this;
+    }
+
+    /**
+     * 이 벡터의 구성 요소는 0을 기준으로 반올림됩니다.
+     * (음수이면 올림, 양수이면 내림).
+     * 
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    roundToZero() {
+        this.x = Math.trunc( this.x );
+        this.y = Math.trunc( this.y );
+        this.z = Math.trunc( this.z );
+
+        return this;
+    }
+
+    /**
+     * 이 벡터 값을 반전 시킵니다.
+     * 
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    negate() {
+        this.x = - this.x;
+        this.y = - this.y;
+        this.z = - this.z;
+    }
+
+    /**
+     * 주어진 벡터와 이 인스턴스의 내적을 계산합니다.
+     * 
+     * @param {Vector3} v
+     * @return {number} 내적의 결과를 반환.
+     */
+    dot( v ) {
+        return this.x * v.x + this.y * v.y + this.z * v.z;
+    }
+
+    /**
+     * (0, 0, 0)에서 (x, y, z)까지의 유클리드 길이(직선 거리)의 제곱을 계산합니다. 벡터의 길이를 비교할 때는
+     * 직선 거리 대신 길이의 제곱을 사용하는 것이 계산 효율이 약간 더 높으므로 이 방법을 사용한 것이 졸습니다.
+     * 
+     * @return {number} 이 벡터의 제곱 길이.
+     */
+    lengthSq() {
+        return this.x * this.x + this.y * this.y + this.z * this.z;
+    }
+
+    /**
+     * (0, 0, 0)에서 (x, y, z)까지의 유클리드 길이(직선 거리)를 계산합니다.
+     * 
+     * @return {number} 이 벡터의 길이
+     */
+    length() {
+        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
+    }
+    
+    /**
+     * 이 벡터의 맨해튼 길이를 계산합니다.
+     * 
+     * @return {number} 이 벡터의 길이.
+     */
+    manhattanLength() {
+        return Math.abs( this.x ) + Math.abs( this.y ) + Math.abs( this.z );
+    }
+
+    /**
+     * 이 벡터를 단위 벡터로 변환합니다. 즉, 이 벡터와 방향은 같지만 길이가 '1'인 벡터로 설정합니다.
+     */
+    normalize() {
+        return this.divideScalar( this.length() || 1);
+    }
+
+    /**
+     * 이 벡터를 현재 벡터와 방향은 같지만 길이가 지정된 벡터로 설정합니다.
+     * 
+     * @param {number} length
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    setLength( length ) {
+        return this.normalize().multiplyScalar( length );
+    }
+
+    /**
+     * 주어진 벡터와 이 인스턴스 사이를 선형 보간 합니다.
+     * 여기서 알파는 선을 따라 이동하는 거리의 백분율입니다.
+     * 알파가 0이면 이 벡터가 되고, 알파가 1이면 주어진 벡터가 됩니다.
+     * 
+     * @param {Vector3} v
+     * @param {number} alpha
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    lerp( v, alpha ) {
+        this.x += ( v.x - this.x ) * alpha;
+        this.y += ( v.y - this.y ) * alpha;
+        this.z += ( v.z - this.z ) * alpha;
+
+        return this;
+    }
+
+    /**
+     * 주어진 벡터들 사이를 선형 보간합니다.
+     * 여기서 알파는 직선을 따라 이동하는 거리의 백분율입니다.
+     * 알파가 0이면 첫 번째 벡터가 되고, 알파가 = 1이면 두 번째 벡터가 됩니다.
+     * 결과는 이 인스턴스에 저장됩니다.
+     * 
+     * @param {Vector3} v1
+     * @param {Vector3} v2
+     * @param {number} alpha
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    lerpVectors( v1, v2, alpha ) {
+        this.x = v1.x + ( v2.x - v1.x ) * alpha;
+        this.y = v1.y + ( v2.y - v1.y ) * alpha;
+        this.z = v1.z + ( v2.z - v1.z ) * alpha;
+
+        return this;
+    }
+
+    /**
+     * 주어진 벡터와 이 인스턴스를 외적 연산합니다.
+     * 
+     * @param {Vector3} v
+     * @return {Vector3} 외적의 결과.
+     */
+    cross( v ) {
+        return this.crossVectors( this, v );
+    }
+
+    /**
+     * 주어진 벡터들의 외적을 게산하고 그 결과를 이 인스턴스에 저장합니다.
+     * 
+     * @param {Vector3} a
+     * @param {Vector3} b
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    crossVectors( a, b ){
+        const ax = a.x, ay = a.y, az = a.z;
+        const bx = b.x, by = b.y, bz = b.z;
+
+        this.x = ay * bz - az * by;
+        this.y = az * bx - ax * bz;
+        this.z = ax * by - ay * bx;
+
+        return this;
+    }
+
+    /**
+     * 이 벡터를 주어진 벡터에 투영합니다.
+     * 
+     * @param {Vector3} v
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    projectOnVector( v ) {
+        const denominator = v.lengthSq();
+
+        if ( denominator === 0 ) return this.set( 0, 0, 0 );
+
+        const scalar = v.dot(this) / denominator;
+
+        return this.copy( v ).multiplyScalar( scalar );
+    }
+
+    /**
+     * 이 벡터를 평면에 투영하려면, 이 벡터를 평면의 법선에 투영한 후,
+     * 이 벡터에서 원래 벡터를 뻅니다.
+     * 
+     * @param {Vector3} planeNormal
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    projectOnPlane( planeNormal ) {
+        _vector.copy( this ).projectOnVector( planeNormal );
+
+        return this.sub( _vector );
+    }
+
+    /**
+     * 주어진 법선 벡터에 수직인 평면에 대해 이 벡터를 반사시킵니다.
+     * 
+     * @param {Vector3} normal
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    reflect( normal ) {
+        return this.sub(_vector.copy( normal ).multiplyScalar( 2 * this.dot( normal )));
+    }
+
+    /**
+     * 주어진 벡터와 이 인스턴스의 사이 각을 라디안 단위로 반환합니다.
+     * 
+     * @param {Vector3} v
+     * @return {number} 라디안 단위 각.
+     */
+    angleTo( v ) {
+        const denominator = Math.sqrt( this.lengthSq() * v.lengthSq() );
+
+        if( denominator === 0 ) return Math.PI / 2;
+
+        const theta = this.dot( v ) / denominator;
+
+        // clamp, to handle numerical problems
+
+        return Math.acos( clamp( theta, -1, 1));
+    }
+
+    /**
+     * 주어직 벡터와 이 인스턴스의 거리를 계산합니다.
+     * 
+     * @param {Vector3} v
+     * @return {number} 거리
+     */
+    distanceTo( v ) {
+        return Math.sqrt( this.distanceToSquared( v ) );
+    }
+
+    /**
+     * 주어진 벡터에서 이 인스턴스까지의 제곱 거리를 계산 합니다. 단순히 다른 거리와 비교하는 경우에는
+     * 거리의 제곱을 사용하는 것이 계산 효율이 약간 더 높으므로 제곱 거리를 비교하는 것이 좋습니다.
+     * 
+     * @param {Vector3} v
+     * @return {number} 제곱 거리
+     */
+    distanceToSquared( v ) {
+        const dx = this.x - v.x, dy = this.y - v.y, dz = this.z - v.z;
+
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    /**
+     * 주어진 벡터와 이 인스턴스의 맨해튼 거리를 계산합니다.
+     * 
+     * @param {Vector3} v
+     * @return {number} 맨해튼 거리 값.
+     */
+    manhattenDistanceTo( v ) {
+        return Math.abs( this.x - v.x ) + Math.abs( this.y - v.y ) + Math.abs( this.z - v.z );
+    }
+
+    /**
+     * 주어진 구면 좌표계로부터 벡터 성분을 설정합니다.
+     * 
+     * @param {Spherical} s
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    setFromSpherical( s ) {
+        return this.setFromSphericalCoords( s.radius, s.phi, s.theta );
+    }
+
+    /**
+     * 주어진 구면 좌표계로 부터 벡터 성분을 설정합니다.
+     * 
+     * @param {number} radius
+     * @param {number} phi
+     * @param {number} theta
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    setFromSphericalCoords( radius, phi, theta ) {
+        const sinPhiRadius = Math.sin( phi ) * radius;
+
+        this.x = sinPhiRadius * Math.sin( theta );
+        this.y = Math.cos( phi ) * radius;
+        this.z = sinPhiRadius * Math.cos( theta );
+
+        return this;
+    }
 
 
 
