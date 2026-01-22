@@ -817,11 +817,198 @@ class Vector3 {
         return this;
     }
 
+    /**
+     * 이 벡터의 구성 요소들을 주어진 원기둥 좌표계로 부터 설정합니다.
+     * 
+     * @param {Cylindrical} c
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    setFromCylindrical( c ) {
+        return this.setFromCylindricalCoords( c.radius, c.theta, c.y );
+    }
 
+    /**
+     * 이 벡터의 구성 요소들을 주어진 원기둥 좌표계로 부터 설정합니다.
+     * 
+     * @param {number} radius
+     * @param {number} theta
+     * @param {number} y
+     * @return {Vector3} 이 벡터 참조 반환.
+     */
+    setFromCylindricalCoords( radius, theta, y ) {
+        this.x = radius * Math.sin( theta );
+        this.y = y;
+        this.z = radius * Math.cos( theta );
 
+        return this;
+    }
 
+    /**
+     * 주어진 변환 메트릭스로 이 벡터의 구성 요소를 설정합니다.
+     * 
+     * @param {Matrix4} m
+     * @return {Vector3} 이 벡터를 반환.
+     */
+    setFromMatrixScale( m ) {
+        const sx = this.setFromMatrixColumn( m, 0 ).length();
+        const sy = this.setFromMatrixColumn( m, 1 ).length();
+        const sz = this.setFromMatrixColumn( m, 2 ).length();
 
-    
+        this.x = sx;
+        this.y = sy;
+        this.z = sz;
 
-    
+        return this;
+    }
+
+    /**
+     * 특정 매트릭스 열로부터 이 벡터의 구성요소를 설정합니다.
+     * 
+     * @param {Matrix4} m
+     * @param {number} index
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    setFromMatrixColumn( m, index ) {
+        return this.fromArray( m.elements, index * 4 );
+    }
+
+    /**
+     * 특정 매트릭스 열로부터 이 벡터의 구성요소를 설정합니다.
+     * 
+     * @param {Matrix3} m
+     * @param {number} index
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    setFromMatrix3Column( m, index ) {
+        return this.fromArray( m.elements, index * 3 );
+    }
+
+    /**
+     * 주어진 오일러 각으로 부터 이 벡터의 구성요소를 설정합니다.
+     * 
+     * @param {Euler} e
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    setFromEuler( e ) {
+        this.x = e._x;
+        this.y = e._y;
+        this.z = e._z;
+
+        return this;
+    }
+
+    /**
+     * 주어진 색상의 RGB 구서 요소로부터 벡터 구성 요소를 설정합니다.
+     * 
+     * @param {Color} c
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    setFromColor( c ) {
+        this.x = c.r;
+        this.y = c.g;
+        this.z = c.b;
+        
+        return this;
+    }
+
+    /**
+     * 이 벡터가 주어진 벡터와 같으면 'true'를 반환합니다.
+     * 
+     * @param {Vector3} v
+     * @return {boolean} 
+     */
+    equals( v ) {
+        return ( ( v.x === this.x ) && ( v.y === this.y ) && ( v.z === this.z ));
+    }
+
+    /**
+     * 이 벡터의 x 값을 'array[ offset ]', y 값을 'array[offset + 1]'
+     * , z 값을 'array[ offset + 2]'로 설정합니다.
+     * 
+     * @param {Array<number>} array
+     * @param {number} [offset=0]
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    fromArray( array, offset = 0) {
+        this.x = array[ offset ];
+        this.y = array[ offset + 1];
+        this.z = array[ offset + 2];
+
+        return this;
+    }
+
+    /**
+     * 이 벡터의 구성 요소를 지정된 배열에 씁니다. 
+     * 배열이 제공되지 않으면 새 인스턴스를 반환합니다.
+     * 
+     * @param {Array<number>} [array=[]]
+     * @param {number} [offset=0]
+     * @return {Array<number>} 이 벡터 구성요소들
+     */
+    toArray( array = [], offset = 0 ) {
+        array[ offset ] = this.x;
+        array[ offset + 1 ] = this.y;
+        array[ offset + 2 ] = this.z;
+        
+        return array;
+    }
+
+    /**
+     * 주어진 벡터 속성으로 부터 이 벡터의 구성 요소를 설정합니다.
+     * 
+     * @param {BufferAttribute} attribute
+     * @param {number} index
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    fromBufferAttribute( attribute, index ) {
+        this.x = attribute.getX( index );
+        this.y = attribute.getY( index );
+        this.z = attribute.getZ( index );
+        
+        return this;
+    }
+
+    /**
+     * 이 벡터의 각 구성 요소를 0 이상 1 미만의 의사 난수 값으로 설정합니다.
+     * (1은 포함되지 않음).
+     * 
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    random() {
+        this.x = Math.random();
+        this.y = Math.random();
+        this.z = Math.random();
+
+        return this;
+    }
+
+    /**
+     * 이 벡터를 단위 구면 상의 균일하게 무작위로 선택된 한 점으로 설정합니다.
+     * 
+     * @return {Vector3} 이 벡터 참조를 반환.
+     */
+    randomDirection() {
+        // https://mathworld.wolfram.com/SpherePointPicking.html
+
+        const theta = Math.random() * Math.PI * 2;
+        const u = Math.random() * 2 - 1;
+        const c = Math.sqrt( 1 - u * u );
+
+        this.x = c * Math.cos( theta );
+        this.y = u;
+        this.z = c * Math.sin( theta );
+
+        return this;
+    }
+
+    *[ Symbol.iterator ]() {
+        yield this.x;
+        yield this.y;
+        yield this.z;
+    }
 }
+
+const _vector = /*@__PURE__*/ new Vector3();
+const _quaternion = /*@__PURE__*/ new Quaternion();
+
+export { Vector3 };
